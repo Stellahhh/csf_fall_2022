@@ -220,43 +220,36 @@ Fixedpoint fixedpoint_double(Fixedpoint val)
   return result;
 }
 
-// need modify
 int fixedpoint_compare(Fixedpoint left, Fixedpoint right)
 {
   int result;
   if (sameSign(left, right) == 1) // same sign
   {
-    // first compare the magnitude of whole parts
-    if (left.integer > right.integer)
+    if (left.integer == right.integer) // same whole part
     {
-      result = 1;
-    }
-    else if (left.integer < right.integer)
-    {
-      result = -1;
-    }
-    else
-    { // integers are the same need to compare fracs
-      if (left.fraction > right.fraction)
-      { // left frac is bigger
-        result = 1;
-      }
-      else if (left.fraction < right.fraction)
-      { // right frac is bigger
-        result = -1;
-      }
-      else
-      { // fracs are the same --> all equal
+      if (left.fraction == right.fraction) // same frac part
+      {
         return 0;
       }
+      else if (left.fraction > right.fraction)
+      { // left frac greater magnitude
+        result = (left.tag == 1) ? -1 : 1;
+      }
+      else
+      {
+        result = (left.tag == 1) ? 1 : -1;
+      }
     }
-    if (left.tag == 0)
+    else // diff whole part
     {
-      return result;
-    }
-    else
-    {
-      return (-1 * result);
+      if (left.integer > right.integer)
+      {
+        result = (left.tag == 1) ? -1 : 1;
+      }
+      else if (left.integer < right.integer)
+      {
+        result = (left.tag == 1) ? 1 : -1;
+      }
     }
   }
   else // diff sign
@@ -265,12 +258,9 @@ int fixedpoint_compare(Fixedpoint left, Fixedpoint right)
     {
       return 0;
     }
-    if (left.tag == 1)
-    { // left is negative
-      return -1;
-    }
-    return 1; // right is negative
+    result = (left.tag == 1) ? -1 : 1;
   }
+  return result;
 }
 
 int sameSign(Fixedpoint left, Fixedpoint right)
