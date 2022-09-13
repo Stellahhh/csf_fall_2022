@@ -103,89 +103,55 @@ uint64_t fixedpoint_frac_part(Fixedpoint val)
   return val.fraction;
 }
 
-// need modify
 Fixedpoint fixedpoint_add(Fixedpoint left, Fixedpoint right)
 {
   // create a new fixedpoint to represent the sum
   Fixedpoint sum = fixedpoint_create2(0UL, 0UL);
-
-  if (left.tag == right.tag) // if the left and the right have the same sign
+  if (left.tag == right.tag) // if same sign
   {
     // determine if the result is negative or positive
-    int twoNeg = 0;
-    if (left.tag == 1) // if it's the sum of two valid negative
-    {
-      sum.tag = 1;
-      twoNeg = 1;
-    }
-    else
-    {
-      sum.tag = 0;
-    }
-
+    sum.tag = (left.tag == 1) ? 1 : 0;
     // performing addition
     sum.integer = left.integer + right.integer;
     sum.fraction = left.fraction + right.fraction;
-    int isOverflow = 0;
-
     if ((sum.integer < left.integer) || (sum.integer < right.integer))
-    {
-      isOverflow = 1;
+    { // if it is overflow
+      sum.tag = (left.tag == 1) ? 3 : 4;
     }
-
     if (sum.fraction < left.fraction) // if carry happens
     {
       sum.integer += 1;
     }
-
-    // if (isOverflow && twoNeg)
-    // {
-    //   sum.tag = 3;
-    // }
-
-    // if (isOverflow && !twoNeg)
-    // {
-    //   sum.tag = 4;
-    // }
-    if (isOverflow)
-    {
-      sum.tag = (twoNeg == 1) ? 3 : 4;
-    }
   }
   else
-  { // different sign, thus magnitude go down
+  { // diff sign
     Fixedpoint big = left;
     Fixedpoint small = right;
     if (left.integer < right.integer || (left.integer == right.integer && left.fraction < right.fraction))
-    { // right one is larger in value
+    { // right is larger
       big = right;
       small = left;
     }
-
     // performing addition
     sum.integer = big.integer - small.integer;
-
     if (big.fraction < small.fraction)
-    { // need carry to frac
+    { // need carry
       if (sum.integer >= 1)
-      { // flipped fracs
+      { // positive sum
+        sum.fraction = -small.fraction + big.fraction;
         sum.integer -= 1;
-        sum.fraction = ((uint64_t)-small.fraction) + big.fraction;
       }
       else
-      {
-        sum.tag = 1;
+      { // negative sum
         sum.fraction = small.fraction - big.fraction;
-        return sum;
       }
     }
     else
-    { // fraction part
-      sum.fraction = big.fraction - small.fraction;
+    { // no carry
+      sum.fraction = -small.fraction + big.fraction;
     }
-    sum.tag = big.tag; // maintain the sign
+    sum.tag = big.tag; // sign goes with the big one
   }
-
   return sum;
 }
 
