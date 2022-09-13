@@ -4,7 +4,8 @@
 #include "tctest.h"
 
 // Test fixture object, has some useful values for testing
-typedef struct {
+typedef struct
+{
   Fixedpoint zero;
   Fixedpoint one;
   Fixedpoint one_half;
@@ -31,11 +32,18 @@ void test_sub(TestObjs *objs);
 void test_is_overflow_pos(TestObjs *objs);
 void test_is_err(TestObjs *objs);
 // TODO: add more test functions
+void test_create_from_hex_example(TestObjs *objs);
+void compare_two_equal(TestObjs *objs);
+void compare_two_pos_equal(TestObjs *objs);
+void compare_two_neg_equal(TestObjs *objs);
+void compare_two_pos_unequal2(TestObjs *objs);
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   // if a testname was specified on the command line, only that
   // test function will be executed
-  if (argc > 1) {
+  if (argc > 1)
+  {
     tctest_testname_to_execute = argv[1];
   }
 
@@ -50,6 +58,11 @@ int main(int argc, char **argv) {
   TEST(test_sub);
   TEST(test_is_overflow_pos);
   TEST(test_is_err);
+  // TEST(test_create_from_hex_example);
+  TEST(compare_two_equal);
+  TEST(compare_two_pos_equal);
+  TEST(compare_two_neg_equal);
+  TEST(compare_two_pos_unequal2);
 
   // IMPORTANT: if you add additional test functions (which you should!),
   // make sure they are included here.  E.g., if you add a test function
@@ -62,7 +75,8 @@ int main(int argc, char **argv) {
   TEST_FINI();
 }
 
-TestObjs *setup(void) {
+TestObjs *setup(void)
+{
   TestObjs *objs = malloc(sizeof(TestObjs));
 
   objs->zero = fixedpoint_create(0UL);
@@ -76,11 +90,13 @@ TestObjs *setup(void) {
   return objs;
 }
 
-void cleanup(TestObjs *objs) {
+void cleanup(TestObjs *objs)
+{
   free(objs);
 }
 
-void test_whole_part(TestObjs *objs) {
+void test_whole_part(TestObjs *objs)
+{
   ASSERT(0UL == fixedpoint_whole_part(objs->zero));
   ASSERT(1UL == fixedpoint_whole_part(objs->one));
   ASSERT(0UL == fixedpoint_whole_part(objs->one_half));
@@ -89,7 +105,8 @@ void test_whole_part(TestObjs *objs) {
   ASSERT(0xfcbf3d5UL == fixedpoint_whole_part(objs->large2));
 }
 
-void test_frac_part(TestObjs *objs) {
+void test_frac_part(TestObjs *objs)
+{
   ASSERT(0UL == fixedpoint_frac_part(objs->zero));
   ASSERT(0UL == fixedpoint_frac_part(objs->one));
   ASSERT(0x8000000000000000UL == fixedpoint_frac_part(objs->one_half));
@@ -98,8 +115,9 @@ void test_frac_part(TestObjs *objs) {
   ASSERT(0x4d1a23c24fafUL == fixedpoint_frac_part(objs->large2));
 }
 
-void test_create_from_hex(TestObjs *objs) {
-  (void) objs;
+void test_create_from_hex(TestObjs *objs)
+{
+  (void)objs;
 
   Fixedpoint val1 = fixedpoint_create_from_hex("f6a5865.00f2");
 
@@ -110,7 +128,8 @@ void test_create_from_hex(TestObjs *objs) {
   ASSERT(0x00f2000000000000UL == fixedpoint_frac_part(val1));
 }
 
-void test_format_as_hex(TestObjs *objs) {
+void test_format_as_hex(TestObjs *objs)
+{
   char *s;
 
   s = fixedpoint_format_as_hex(objs->zero);
@@ -138,7 +157,8 @@ void test_format_as_hex(TestObjs *objs) {
   free(s);
 }
 
-void test_negate(TestObjs *objs) {
+void test_negate(TestObjs *objs)
+{
   // none of the test fixture objects are negative
   ASSERT(!fixedpoint_is_neg(objs->zero));
   ASSERT(!fixedpoint_is_neg(objs->one));
@@ -180,8 +200,9 @@ void test_negate(TestObjs *objs) {
   ASSERT(0x4d1a23c24fafUL == fixedpoint_frac_part(objs->large2));
 }
 
-void test_add(TestObjs *objs) {
-  (void) objs;
+void test_add(TestObjs *objs)
+{
+  (void)objs;
 
   Fixedpoint lhs, rhs, sum;
 
@@ -193,8 +214,9 @@ void test_add(TestObjs *objs) {
   ASSERT(0x5be47e8ea0538c50UL == fixedpoint_frac_part(sum));
 }
 
-void test_sub(TestObjs *objs) {
-  (void) objs;
+void test_sub(TestObjs *objs)
+{
+  (void)objs;
 
   Fixedpoint lhs, rhs, diff;
 
@@ -206,7 +228,8 @@ void test_sub(TestObjs *objs) {
   ASSERT(0x0905000000000000UL == fixedpoint_frac_part(diff));
 }
 
-void test_is_overflow_pos(TestObjs *objs) {
+void test_is_overflow_pos(TestObjs *objs)
+{
   Fixedpoint sum;
 
   sum = fixedpoint_add(objs->max, objs->one);
@@ -221,8 +244,9 @@ void test_is_overflow_pos(TestObjs *objs) {
   ASSERT(fixedpoint_is_overflow_pos(sum));
 }
 
-void test_is_err(TestObjs *objs) {
-  (void) objs;
+void test_is_err(TestObjs *objs)
+{
+  (void)objs;
 
   // too many characters
   Fixedpoint err1 = fixedpoint_create_from_hex("88888888888888889.6666666666666666");
@@ -255,3 +279,95 @@ void test_is_err(TestObjs *objs) {
 }
 
 // TODO: implement more test functions
+
+// my test 1 to see if create_from_hex is correctly implemented
+
+void test_create_from_hex_example(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint val1 = fixedpoint_create_from_hex("f6a5865.00f2");
+
+  printf("%ld\n", (long)fixedpoint_whole_part(val1));
+
+  // ASSERT(fixedpoint_is_valid(val1));
+
+  // ASSERT(0xf6a5865UL == fixedpoint_whole_part(val1));
+
+  // ASSERT(0x00f2000000000000UL == fixedpoint_frac_part(val1));
+}
+
+void test_add_two_positive_no_overflow(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint lhs, rhs, sum;
+
+  lhs = fixedpoint_create_from_hex("-c7252a193ae07.7a51de9ea0538c5");
+  rhs = fixedpoint_create_from_hex("d09079.1e6d601");
+  sum = fixedpoint_add(lhs, rhs);
+  ASSERT(fixedpoint_is_neg(sum));
+  ASSERT(0xc7252a0c31d8eUL == fixedpoint_whole_part(sum));
+  ASSERT(0x5be47e8ea0538c50UL == fixedpoint_frac_part(sum));
+}
+
+void compare_two_pos_equal(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint lhs, rhs;
+
+  lhs = fixedpoint_create(0x4b19efceaUL);
+  rhs = fixedpoint_create(0x4b19efceaUL);
+  // rhs.tag = 1;
+  ASSERT(fixedpoint_compare(lhs, rhs) == 0);
+}
+
+void compare_two_neg_equal(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint lhs, rhs;
+
+  lhs = fixedpoint_create(0x4b19efceaUL);
+  rhs = fixedpoint_create(0x4b19efceaUL);
+  rhs.tag = 1;
+  lhs.tag = 1;
+  ASSERT(fixedpoint_compare(lhs, rhs) == 0);
+}
+
+void compare_two_equal(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint lhs, rhs;
+
+  lhs = fixedpoint_create2(0x4b19efceaUL, 0x4b19efceaUL);
+  rhs = fixedpoint_create2(0x4b19efceaUL, 0x4b19efceaUL);
+  // rhs.tag = 1;
+  ASSERT(fixedpoint_compare(lhs, rhs) == 0);
+}
+
+void compare_two_pos_unequal1(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint lhs, rhs;
+
+  lhs = fixedpoint_create(0x4b19efceaUL);
+  rhs = fixedpoint_create(0x4b19eaceaUL);
+  // rhs.tag = 1;
+  ASSERT(fixedpoint_compare(lhs, rhs) == 1);
+}
+
+void compare_two_pos_unequal2(TestObjs *objs)
+{
+  (void)objs;
+
+  Fixedpoint lhs, rhs;
+
+  lhs = fixedpoint_create2(0x4b19efceaUL, 0x4b19eaceaUL);
+  rhs = fixedpoint_create2(0x4b19eaceaUL, 0x4b19efceaUL);
+  // rhs.tag = 1;
+  ASSERT(fixedpoint_compare(lhs, rhs) == 1);
+}

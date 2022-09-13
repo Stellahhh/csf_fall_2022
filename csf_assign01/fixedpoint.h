@@ -2,9 +2,30 @@
 #define FIXEDPREC_H
 
 #include <stdint.h>
+// typedef struct
+// {
+//   // TODO: add fields
+//   uint64_t isValid;     // 1 for valid and 0 for invalid
+//   uint64_t isNegative;  // 1 for negative and 0 for non-negative
+//   uint64_t isOverflow;  // 1 for overflow and 0 for not
+//   uint64_t isUnderflow; // 1 for underflow and 0 for not
+//   uint64_t isError;     // 1 for error and 0 for not
+// } Tag;
 
-typedef struct {
-  // TODO: add fields
+typedef struct
+{
+  uint64_t integer;
+  uint64_t fraction;
+  int tag;
+  /* There are 5 possible tags:
+      0 --> valid/non-negative
+      1 --> valid/negative
+      2 --> error
+      3 --> negative overflow
+      4 --> positive overflow
+      5 --> negative underflow
+      6 --> positive underflow
+  */
 } Fixedpoint;
 
 // Create a Fixedpoint value representing an integer.
@@ -139,6 +160,18 @@ Fixedpoint fixedpoint_double(Fixedpoint val);
 //     0 if left == right;
 //     1 if left > right
 int fixedpoint_compare(Fixedpoint left, Fixedpoint right);
+
+// My helper function
+// Compare the sign of two valid Fixedpoint values.
+//
+// Parameters:
+//   left - the left Fixedpoint value
+//   right - the right Fixedpoint value
+//
+// Returns:
+//     0 if diff sign;
+//     1 if same sign
+int sameSign(Fixedpoint left, Fixedpoint right);
 
 // Determine whether a Fixedpoint value is equal to 0.
 //
