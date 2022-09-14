@@ -24,11 +24,10 @@ Fixedpoint fixedpoint_create2(uint64_t whole, uint64_t frac)
   return target;
 }
 
-// need modify
 Fixedpoint fixedpoint_create_from_hex(const char *hex)
 {
+  // initialize
   Fixedpoint final = fixedpoint_create2(0UL, 0UL);
-
   // exceptions handling for  '-.' '.' will return 0
   if (strcmp(hex, "-.") == 0 || strcmp(hex, ".") == 0)
   {
@@ -36,13 +35,9 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex)
   }
 
   uint64_t wholeStart = 0; // assume the char is positive
-
   // check if it is negative
-  if (hex[0] == '-')
-  {
-    final.tag = 1;
-    wholeStart = 1;
-  }
+  wholeStart = (hex[0] == '-') ? 1 : 0;
+  final.tag = (hex[0] == '-') ? 1 : 0;
 
   // get the start index of the fraction part
   uint64_t decPos = strlen(hex); // default value, need to be changed
@@ -59,28 +54,27 @@ Fixedpoint fixedpoint_create_from_hex(const char *hex)
     }
   }
 
-  if (decPos - wholeStart > 16 || !(strlen(hex) == decPos || strlen(hex) - decPos - 1 <= 16))
+  // getting number of digits
+  int wholeDigit = decPos - wholeStart;
+  int fracDigit = strlen(hex) - decPos;
+  if (wholeDigit > 16 || !(strlen(hex) == decPos || fracDigit - 1 <= 16))
   {
     final.tag = 2;
     return final;
   }
 
-  // getting number of digits
-  // int wholeDigit = decPos - wholeStart;
-  // int fracDigit = strlen(hex) - decPos;
-
   // truncate whole and frac part
-  char whole_part[decPos - wholeStart + 1];
-  memset(whole_part, '\0', sizeof(whole_part));
-  strncpy(whole_part, &hex[wholeStart], decPos - wholeStart);
-
+  char whole_part[wholeDigit + 1];
   char frac_part[strlen(hex) - decPos];
+  memset(whole_part, '\0', sizeof(whole_part));
   memset(frac_part, '\0', sizeof(frac_part));
+  strncpy(whole_part, &hex[wholeStart], wholeDigit);
   if (decPos < strlen(hex))
   {
     strcpy(frac_part, &hex[decPos + 1]);
-    // change frac to uint64
+    // char to uint64
     final.fraction = (uint64_t)strtoul(frac_part, NULL, 16);
+    // padding 0
     final.fraction = final.fraction << ((16 - strlen(frac_part)) * 4);
   }
   else
@@ -189,28 +183,24 @@ Fixedpoint fixedpoint_negate(Fixedpoint val)
   return val;
 }
 
-// need modify
 Fixedpoint fixedpoint_halve(Fixedpoint val)
 {
+  int isOddFrac = (val.fraction % 2);
+  // performing division
+  val.fraction = val.fraction / 2;
 
-  if ((val.fraction % 2) == 1) // it is odd, underflow happens
+  if (isOddFrac == 1) // it is odd, underflow happens
   {
-    if (fixedpoint_is_neg(val) == 1)
-    {
-      val.tag = 5; // negagtive underflow
-    }
-    else
-    {
-      val.tag = 6; // positive underflow
-    }
+    // determine if it's negative/positive underflow
+    val.tag = (fixedpoint_is_neg(val) == 1) ? 5 : 6;
   }
-  val.fraction = val.fraction / 2; // divide frac by two
+  if ((val.integer % 2) == 1) // odd whole part
+  {
+    val.fraction |= (1UL << 63); // shift 1
+  }
 
-  if ((val.integer % 2) == 1) // if the integer part is odd
-  {                           // need to shift 1 to frac
-    val.fraction |= (1UL << 63);
-  }
-  val.integer = (val.integer >> 1); // divide whole by two
+  // performing division
+  val.integer = (val.integer / 2);
   return val;
 }
 
@@ -345,99 +335,42 @@ int fixedpoint_is_valid(Fixedpoint val)
   return 0;
 }
 
-// need modify
 char *fixedpoint_format_as_hex(Fixedpoint val)
 {
-  int string_ptr = 0;
-  char *s = (char *)malloc(35 * sizeof(char));
-  if (val.tag == 1)
-  { // insert negative sign if needed
-    s[string_ptr] = '-';
-    string_ptr++;
-  }
-  // init imporant vars
-  uint64_t ptr = 1;
-  ptr = (ptr << 63);
-  int back_shift = 60;
-  int leading_zero = 1;
-  for (int i = 0; i < 16; i++)
-  { // loop through all sets of 4 bits of whole
-    uint64_t hex = 0;
-    for (int j = 0; j < 4; j++)
-    { // loop through chunk of 4 bits
-      uint64_t temp = (val.integer & ptr);
-      hex += (temp >> back_shift);
-      ptr = ptr >> 1;
-    }
-    // convert hex to char
-    if (hex >= 10 && hex <= 15)
-    { // A - F
-      hex += 87;
-    }
-    else
-    { // digits
-      hex += 48;
-    }
-    if (!((leading_zero == 1) && ((hex == 48))))
-    {                            // make sure we dont save leading zeros
-      s[string_ptr] = (char)hex; // add correct char
-      string_ptr++;
-      leading_zero = 0;
-    }
-    back_shift -= 4;
-  }
-  if (leading_zero == 1)
-  { // kill leading zero stipulation
-    s[string_ptr] = '0';
-    string_ptr++;
-    leading_zero = 0;
-  }
-  if (val.fraction != 0)
-  {                      // only add fractional part if one exists
-    s[string_ptr] = '.'; // add decimal
-    string_ptr++;
-    // init impt vars
-    ptr = 1;
-    ptr = (ptr << 63);
-    back_shift = 60;
-    int trail_zeros = 0;
-    for (int i = 0; i < 16; i++)
-    { // loop through 16 chunks of 4 bits
-      uint64_t hex = 0;
-      for (int j = 0; j < 4; j++)
-      { // loop through chunks of 4
-        uint64_t temp = (val.fraction & ptr);
-        hex += (temp >> back_shift);
-        ptr = (ptr >> 1);
-      }
-      // convert hex to char
-      if (hex >= 10 && hex <= 15)
-      { // A and F
-        hex += 87;
-      }
-      else
-      {
-        hex += 48;
-      }
+  char *result = malloc(35);
 
-      if (hex != 48)
-      { // only add a char directly if not a zero
-        for (int i = 0; i < trail_zeros; i++)
-        { // add saved up zeros
-          s[string_ptr] = (char)48;
-          string_ptr++;
-        }
-        s[string_ptr] = (char)hex; // add correct char
-        string_ptr++;
-        trail_zeros = 0;
-      }
-      else
-      { // if we find a zero tally it up in case we need to add it (if zeros arent trail)
-        trail_zeros++;
-      }
-      back_shift -= 4;
-    }
+  if (val.tag == 1 && val.fraction == 0)
+  { // negative whole only
+    sprintf(result, "-%lx", val.integer);
   }
-  s[string_ptr] = '\0'; // end string
-  return s;
+  if (val.tag == 1 && val.fraction != 0)
+  { // negative both whole and frac
+    sprintf(result, "-%lx.%016lx", val.integer, val.fraction);
+
+    // remove zeros in frac
+    int curr = strlen(result) - 1;
+    while (result[curr] == '0')
+    {
+      curr--;
+    }
+    result[curr + 1] = '\0';
+  }
+  if (val.tag == 0 && val.fraction == 0)
+  { // positive whole only
+    sprintf(result, "%lx", val.integer);
+  }
+  if (val.tag == 0 && val.fraction != 0)
+  { // positive whole and frac
+    sprintf(result, "%lx.%016lx", val.integer, val.fraction);
+
+    // remove zeros in frac
+    int curr = strlen(result) - 1;
+    while (result[curr] == '0')
+    {
+      curr--;
+    }
+    result[curr + 1] = '\0';
+  }
+
+  return result;
 }
